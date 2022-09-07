@@ -1,0 +1,43 @@
+plugins {
+    id 'java'
+    id 'java-library'
+    id 'com.github.johnrengelman.shadow' version '7.1.2' apply true
+}
+def jmhVersion = '1.35'
+group 'xyz.isaiahp'
+version '1.0-SNAPSHOT'
+
+sourceSets {
+    jmh {
+        compileClasspath += sourceSets.test.runtimeClasspath
+        runtimeClasspath += sourceSets.test.runtimeClasspath
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+dependencies {
+    jmhImplementation project
+    jmhImplementation "org.openjdk.jmh:jmh-core:${jmhVersion}"
+    jmhAnnotationProcessor "org.openjdk.jmh:jmh-generator-annprocess:${jmhVersion}"
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+}
+
+
+apply plugin: 'com.github.johnrengelman.shadow'
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
+task benchmarkJar(type: ShadowJar) {
+
+    archiveFileName = 'benchmarks.jar'
+    archiveClassifier.set("benchmarks")
+    manifest.attributes('Main-Class': 'org.openjdk.jmh.Main')
+    from sourceSets.jmh.output
+    from sourceSets.jmh.compileClasspath
+}
+
+test {
+    useJUnitPlatform()
+}
