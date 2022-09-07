@@ -11,7 +11,7 @@ public class TimeOutTests {
         long startTime = 1661971123000L;
         long resolution = 32;
         long maxTimeInterval = 2048;
-        FixedTimeOut timeout = new FixedTimeOut(TimeUnit.MILLISECONDS, startTime, resolution, maxTimeInterval);
+        BitsetTimeWheel timeout = new BitsetTimeWheel(TimeUnit.MILLISECONDS, startTime, resolution, maxTimeInterval);
         int timeoutId = timeout.schedule(startTime + 32);
 
         timeout.advanceCurrentTick(startTime + 30);

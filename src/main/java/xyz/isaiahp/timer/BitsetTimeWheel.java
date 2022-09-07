@@ -2,13 +2,13 @@ package xyz.isaiahp.timer;
 
 import java.util.concurrent.TimeUnit;
 
-public class FixedTimeOut implements TimeOut {
+public class BitsetTimeWheel implements TimeOut {
     private final TimeUnit timeUnit;
     private long startTime;
     private final long resolution;
     private final long maxTimeInterval;
 
-    public FixedTimeOut(TimeUnit timeUnit, long startTime, long resolution, long maxTimeInterval) {
+    public BitsetTimeWheel(TimeUnit timeUnit, long startTime, long resolution, long maxTimeInterval) {
 
         checkPowerOf2(resolution);
         checkPowerOf2(maxTimeInterval);
@@ -39,5 +39,15 @@ public class FixedTimeOut implements TimeOut {
 
     public void advanceCurrentTick(long now) {
 
+    }
+
+    @Override
+    public int scheduleTimer(long deadline) {
+        return 0;
+    }
+
+    @Override
+    public boolean cancelTimer(int timeoutId) {
+        return false;
     }
 }
