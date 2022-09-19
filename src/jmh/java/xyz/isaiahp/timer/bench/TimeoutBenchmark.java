@@ -22,7 +22,7 @@ public class TimeoutBenchmark {
 
         long deadline = testCase.nextDeadline();
         BitsetTimeWheel timer = testCase.bitsetTimeWheel;
-        int timeoutId = timer.scheduleTimer(deadline);
+        int timeoutId = timer.scheduleTimeout(deadline);
         Blackhole.consumeCPU(10);
         timer.cancelTimer(timeoutId);
         return timeoutId;
@@ -33,7 +33,7 @@ public class TimeoutBenchmark {
 
         long deadline = testCase.nextDeadline();
         BinaryHeapTimer timer = testCase.binaryHeapTimer;
-        int timeoutId = timer.scheduleTimer(deadline);
+        int timeoutId = timer.scheduleTimeout(deadline);
         Blackhole.consumeCPU(10);
         timer.cancelTimer(timeoutId);
         return timeoutId;

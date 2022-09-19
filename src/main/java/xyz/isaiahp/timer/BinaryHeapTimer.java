@@ -10,7 +10,7 @@ public class BinaryHeapTimer implements TimeOut {
         timerIds = new int[initialCapacity];
     }
 
-    public int scheduleTimer(long deadline) {
+    public int scheduleTimeout(long deadline) {
         return 0;
     }
 
