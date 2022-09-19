@@ -23,6 +23,38 @@ public class TimeOutTests {
 
         timerId = timeout.scheduleTimeout(startTime + 4096 - 2*resolution);
         Assertions.assertTrue(timerId >= 0);
+    }
+
+    @Test
+    public void testErrWhenCapacityExceeded() {
+
+        long startTime = System.currentTimeMillis();
+        long tickSize = 512;
+        long maxTimeInterval = 2047 - tickSize;
+
+        BitsetTimeWheel timeout = new BitsetTimeWheel(TimeUnit.MILLISECONDS, startTime, tickSize, maxTimeInterval,
+                64);
+        int expired = timeout.pollTimeouts(startTime + 4096, (timeUnit, now, timerId) -> {
+
+        });
+        Assertions.assertEquals(0, expired);
+
+        int LIMIT = 4096;
+        long currentTime = timeout.getCurrentTime();
+        for (int i = 1; i < LIMIT; i++) {
+            final long deadline = currentTime + ((maxTimeInterval) * i) - tickSize;
+            for (int j = 0; j < 65; j++) {
+                final int timeOutId = timeout.scheduleTimeout(deadline);
+                if (j == 64) {
+                    //max timer threshold reached
+                    Assertions.assertEquals(timeOutId, BitsetTimeWheel.ERR_CAPACITY_EXCEEDED);
+                }
+            }
+            final long timeNow = deadline + tickSize;
+            final int count = timeout.pollTimeouts(timeNow, ((timeUnit, now, timerId1) -> {
+            }));
+            Assertions.assertEquals(64, count);
+        }
 
     }
 
@@ -61,11 +93,41 @@ public class TimeOutTests {
     }
 
     @Test
+    public void testManyTimeoutISingleTick() {
+        long startTime = System.currentTimeMillis();
+        long tickSize = 512;
+        long maxTimeInterval = 2048;
+
+        for (int maxTimerPerTick = 64; maxTimerPerTick < 512; maxTimerPerTick += 64) {
+
+            BitsetTimeWheel timeout = new BitsetTimeWheel(TimeUnit.MILLISECONDS, startTime, tickSize, maxTimeInterval,
+                    maxTimerPerTick);
+            int expired = timeout.pollTimeouts(startTime + 4096, (timeUnit, now, timerId) -> {
+
+            });
+            Assertions.assertEquals(0, expired);
+
+            int LIMIT = 4096;
+            long currentTime = timeout.getCurrentTime();
+            for (int i = 1; i < LIMIT; i++) {
+                final long deadline = currentTime + ((maxTimeInterval) * i) - tickSize;
+                for (int j = 0; j < maxTimerPerTick; j++) {
+                    timeout.scheduleTimeout(deadline);
+                }
+                final long timeNow = deadline + tickSize;
+                final int count = timeout.pollTimeouts(timeNow, ((timeUnit, now, timerId1) -> {
+                }));
+                Assertions.assertEquals(maxTimerPerTick, count);
+            }
+        }
+    }
+        @Test
     public void testWrap() {
         long startTime = System.currentTimeMillis();
         long resolution = 512;
         long maxTimeInterval = 2048;
-        BitsetTimeWheel timeout = new BitsetTimeWheel(TimeUnit.MILLISECONDS, startTime, resolution, maxTimeInterval, 64);
+        BitsetTimeWheel timeout = new BitsetTimeWheel(TimeUnit.MILLISECONDS, startTime, resolution, maxTimeInterval,
+                64);
         int expired = timeout.pollTimeouts(startTime + 4096, (timeUnit, now, timerId) -> {
 
         });
@@ -111,10 +173,8 @@ public class TimeOutTests {
                 }
         ));
 
-        
         Assertions.assertEquals(1, timeout.pollTimeouts(startTime + 32, (timeUnit, now, timerId) -> {
             Assertions.assertEquals(timeoutId, timerId);
         }));
-
     }
 }

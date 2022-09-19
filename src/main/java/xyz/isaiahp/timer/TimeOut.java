@@ -13,6 +13,6 @@ public interface TimeOut {
     @FunctionalInterface
     interface Handler
     {
-        void onTimeout(TimeUnit timeUnit, long now, long timerId);
+        void onTimeout(TimeUnit timeUnit, long now, int timerId);
     }
 }
