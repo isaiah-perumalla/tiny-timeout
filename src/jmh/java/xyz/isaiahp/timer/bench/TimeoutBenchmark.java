@@ -18,18 +18,18 @@ import java.util.concurrent.TimeUnit;
 public class TimeoutBenchmark {
 
     @Benchmark
-    public int bitsetTimerScheduleAndCancel(TestCase testCase, Blackhole bh) {
+    public long bitsetTimerScheduleAndCancel(TestCase testCase, Blackhole bh) {
 
         long deadline = testCase.nextDeadline();
         BitsetTimeWheel timer = testCase.bitsetTimeWheel;
-        int timeoutId = timer.schedule(deadline);
+        int timeoutId = timer.scheduleTimer(deadline);
         Blackhole.consumeCPU(10);
         timer.cancelTimer(timeoutId);
         return timeoutId;
     }
 
     @Benchmark
-    public int binHeapTimerScheduleAndCancel(TestCase testCase, Blackhole bh) {
+    public long binHeapTimerScheduleAndCancel(TestCase testCase, Blackhole bh) {
 
         long deadline = testCase.nextDeadline();
         BinaryHeapTimer timer = testCase.binaryHeapTimer;
@@ -57,8 +57,8 @@ public class TimeoutBenchmark {
         @Setup(Level.Iteration)
         public void setup() {
             long startTime = System.currentTimeMillis();
-            bitsetTimeWheel = new BitsetTimeWheel(TimeUnit.MILLISECONDS, startTime, resolutionMillis, maxTimeoutMillis);
-            binaryHeapTimer = new BinaryHeapTimer(startTime);
+            bitsetTimeWheel = new BitsetTimeWheel(TimeUnit.MILLISECONDS, startTime, resolutionMillis, maxTimeoutMillis, 64);
+            binaryHeapTimer = new BinaryHeapTimer(startTime,32);
             timeouts = new long[size];
             index = 0;
             for (int i = 0; i < size; i++) {

@@ -28,7 +28,7 @@ public class VolatileBenchmark {
 
     @Benchmark
     public int volatileIntAdd() {
-        BitsetTimeWheel.checkPowerOf2(2);
+        BitsetTimeWheel.checkPowerOf2(2, "not");
         return volatileInt++;
     }
 

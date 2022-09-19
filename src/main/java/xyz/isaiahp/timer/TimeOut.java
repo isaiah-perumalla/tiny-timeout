@@ -7,7 +7,7 @@ public interface TimeOut {
     int scheduleTimer(long deadline);
     boolean cancelTimer(int timeoutId);
 
-    int poll(final Handler handler, final int expiryLimit);
+    int pollTimeouts(final long now, final TimeOut.Handler handler);
 
 
     @FunctionalInterface

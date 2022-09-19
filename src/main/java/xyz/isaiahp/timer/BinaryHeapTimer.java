@@ -1,8 +1,13 @@
 package xyz.isaiahp.timer;
 
 public class BinaryHeapTimer implements TimeOut {
-    public BinaryHeapTimer(long startTime) {
-
+    private final long[] deadlines;
+    private final int[] timerIds;
+    private int nextTimeId = 1;
+    
+    public BinaryHeapTimer(long startTime, int initialCapacity) {
+        deadlines = new long[initialCapacity];
+        timerIds = new int[initialCapacity];
     }
 
     public int scheduleTimer(long deadline) {
@@ -13,4 +18,10 @@ public class BinaryHeapTimer implements TimeOut {
     public boolean cancelTimer(int timeoutId) {
         return false;
     }
+
+    @Override
+    public int pollTimeouts(long now, Handler handler) {
+        return 0;
+    }
+
 }
