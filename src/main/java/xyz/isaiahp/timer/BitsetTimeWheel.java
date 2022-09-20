@@ -87,7 +87,7 @@ public class BitsetTimeWheel implements TimeOut {
         }
 
         final int bucketIndex = (int) (deadLineBucket & bucketMask());
-        final int longPerBucket = longPerBucket();
+        final int longPerBucket = longPerBucket(timerPerTick);
         final int startIndex = bucketIndex * longPerBucket;
 
         for (int i = 0; i < longPerBucket; i++) {
@@ -110,8 +110,8 @@ public class BitsetTimeWheel implements TimeOut {
     }
 
 
-    private int longPerBucket() {
-        return timerPerTick / Long.SIZE;
+    private static int longPerBucket(int timerPerTick) {
+        return timerPerTick >> 6;
     }
 
     private int bucketMask() {
@@ -141,8 +141,10 @@ public class BitsetTimeWheel implements TimeOut {
             currentTick = nowBucketId;
             return 0;
         }
+        final int longPerBucket = longPerBucket(timerPerTick);
         for (long i = currentTick; i < nowBucketId ; i++) {
-            final int index = (int) (i & bucketMask()) * longPerBucket();
+
+            final int index = (int) (i & bucketMask()) * longPerBucket;
             expiredCount += expireTimersAt(index, handler, now);
             currentTick += 1;
         }
@@ -152,7 +154,7 @@ public class BitsetTimeWheel implements TimeOut {
 
     private int expireTimersAt(int bucketIndex, Handler handler, long now) {
         int count = 0;
-        int longPerBucket = longPerBucket();
+        int longPerBucket = longPerBucket(timerPerTick);
         for (int i = 0; i < longPerBucket; i++) {
             final int index = bucketIndex + i;
             long bitSet = timerWheel[index];
