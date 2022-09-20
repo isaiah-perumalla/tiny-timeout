@@ -1,12 +1,7 @@
 package xyz.isaiahp.timer.bench;
 
 import org.openjdk.jmh.annotations.*;
-import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.RunnerException;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
-import xyz.isaiahp.timer.FixedTimeOut;
-import xyz.isaiahp.timer.TimeOut;
+import xyz.isaiahp.timer.BitsetTimeWheel;
 
 import java.util.concurrent.TimeUnit;
 
@@ -33,7 +28,7 @@ public class VolatileBenchmark {
 
     @Benchmark
     public int volatileIntAdd() {
-        FixedTimeOut.checkPowerOf2(2);
+        BitsetTimeWheel.checkPowerOf2(2, "not");
         return volatileInt++;
     }
 
