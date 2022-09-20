@@ -24,7 +24,20 @@ public class TimeOutTests {
         timerId = timeout.scheduleTimeout(startTime + 4096 - 2*resolution);
         Assertions.assertTrue(timerId >= 0);
     }
+    @Test
+    public void testAdvanceTimeonPoll() {
+        long startTime = System.currentTimeMillis();
+        long tickSize = 512;
+        long maxTimeInterval = 2047 - tickSize;
 
+        BitsetTimeWheel timeout = new BitsetTimeWheel(TimeUnit.MILLISECONDS, startTime, tickSize, maxTimeInterval,
+                64);
+        int expired = timeout.pollTimeouts(startTime + 4096, (timeUnit, now, timerId) -> {
+
+        });
+        long currentTime = timeout.getCurrentTime();
+        Assertions.assertEquals(startTime + 4096, currentTime);
+    }
     @Test
     public void testErrWhenCapacityExceeded() {
 
@@ -51,10 +64,34 @@ public class TimeOutTests {
                 }
             }
             final long timeNow = deadline + tickSize;
+            final int activeTimerCount = timeout.count();
+            Assertions.assertEquals(64, activeTimerCount);
             final int count = timeout.pollTimeouts(timeNow, ((timeUnit, now, timerId1) -> {
             }));
             Assertions.assertEquals(64, count);
         }
+
+    }
+
+    @Test
+    public void testCancelTimeout() {
+        long startTime = System.currentTimeMillis();
+        long tickSize = 512;
+        long maxTimeInterval = 2047 - tickSize;
+        BitsetTimeWheel timeout = new BitsetTimeWheel(TimeUnit.MILLISECONDS, startTime, tickSize, maxTimeInterval,
+                64);
+        final long deadline = startTime + maxTimeInterval;
+        for (int j = 0; j < 64; j++) {
+            int id = timeout.scheduleTimeout(deadline);
+            Assertions.assertTrue(id >= 0);
+            if (j == 63) {
+                timeout.cancelTimer(id);
+            }
+        }
+        final long timeNow = deadline + tickSize;
+        final int count = timeout.pollTimeouts(timeNow, ((timeUnit, now, timerId1) -> {
+        }));
+        Assertions.assertEquals(63, count);
 
     }
 
@@ -86,9 +123,6 @@ public class TimeOutTests {
 
         });
         Assertions.assertEquals(expired, 1);
-
-
-
 
     }
 
@@ -154,9 +188,9 @@ public class TimeOutTests {
         BitsetTimeWheel timeout = new BitsetTimeWheel(TimeUnit.MILLISECONDS, startTime, resolution, maxTimeInterval, 64);
         int timeoutId = timeout.scheduleTimeout(startTime + 1 );
         Assertions.assertTrue( timeoutId >= 0);
-        timeout.cancelTimer(timeoutId);
+        Assertions.assertEquals(true, timeout.cancelTimer(timeoutId));
         Assertions.assertEquals(0, timeout.pollTimeouts(startTime + 32, (timeUnit, now, timerId) -> {
-            throw new IllegalStateException("time should be cancelled");
+            throw new IllegalStateException("time should be cancelled " + timerId);
                 }
         ));
 

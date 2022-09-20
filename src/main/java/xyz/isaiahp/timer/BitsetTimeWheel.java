@@ -23,6 +23,7 @@ public class BitsetTimeWheel implements TimeOut {
      */
     private final int tickGranularityBits;
     private final long maxTimeoutDuration;
+    private int activeTimers;
 
 
     private int timerPerTick = 64;
@@ -49,6 +50,7 @@ public class BitsetTimeWheel implements TimeOut {
         this.timerPerTick = timerPerTick;
         final int longPerBucket = timerPerTick /(Long.SIZE);
         timerWheel = new long[ticks * longPerBucket];
+        this.activeTimers = 0;
 
     }
 
@@ -91,12 +93,13 @@ public class BitsetTimeWheel implements TimeOut {
         for (int i = 0; i < longPerBucket; i++) {
             final int index = startIndex + i;
             long timeBitSet = timerWheel[index];
-            short bitIndex = freeBitIndex(timerWheel, index);
+            short bitIndex = freeBitIndex(timeBitSet);
             if (bitIndex < 0) {
                 continue;
             }
             timerWheel[index] = timeBitSet | (1L << bitIndex);
             final int timerId = getTimerId(index, bitIndex);
+            activeTimers++;
             return timerId;
         }
         return ERR_CAPACITY_EXCEEDED;
@@ -117,10 +120,8 @@ public class BitsetTimeWheel implements TimeOut {
     }
 
 
-    private static short freeBitIndex(long[] timerWheel, int i) {
-        long bitSet = timerWheel[i];
-        if (bitSet == 0) return 0;
-        //full
+    private static short freeBitIndex(long bitSet) {
+        if (bitSet == EMPTY_BITSET) return 0;
         if (bitSet == FULL_BITSET) return -1;
         for (short j = 0; j < Long.SIZE; j++) {
             if (0 == (bitSet & (1L << j))) {
@@ -135,8 +136,11 @@ public class BitsetTimeWheel implements TimeOut {
         assert now >= startTime;
         final long nowBucketId = (now - startTime) >> tickGranularityBits;
         if (nowBucketId < 0 || nowBucketId < currentTick) return 0;
-        final int resolution = 1 << tickGranularityBits;
         int expiredCount = 0;
+        if (activeTimers == 0) {
+            currentTick = nowBucketId;
+            return 0;
+        }
         for (long i = currentTick; i < nowBucketId ; i++) {
             final int index = (int) (i & bucketMask()) * longPerBucket();
             expiredCount += expireTimersAt(index, handler, now);
@@ -159,6 +163,7 @@ public class BitsetTimeWheel implements TimeOut {
                     timerWheel[index] &= ~bitMask; //clear the bit to cancel timeout
                     bitSet &= ~bitMask;
                     int timerId = getTimerId(index, j);
+                    activeTimers--;
                     handler.onTimeout(timeUnit, now, timerId);
                     count++;
                 }
@@ -169,20 +174,35 @@ public class BitsetTimeWheel implements TimeOut {
 
     @Override
     public boolean cancelTimer(int timeoutId) {
-        clearBit(timeoutId, timerWheel);
-        return true;
+        if (timeoutId < 0) {
+            return false;
+        }
+        if (clearBit(timeoutId, timerWheel)) {
+            activeTimers--;
+            return true;
+        }
+        return false;
     }
 
-    private void clearBit(int timeoutId, long[] timerWheel) {
+    private static boolean clearBit(int timeoutId, long[] timerWheel) {
         int bitSlot = timeoutId / Long.SIZE;
         int bitMask = timeoutId & (Long.SIZE-1);
         long set = timerWheel[bitSlot];
-        assert (set & (1 << bitMask)) != 0 : "timeoutId not set";
-        timerWheel[bitSlot] = set & ~(1 << bitMask);
+        boolean isSet = (set & (1 << bitMask)) != 0;
+        assert isSet : "timeoutId not set";
+        if (isSet) {
+            timerWheel[bitSlot] = set & ~(1L << bitMask);
+            return true;
+        }
+        return false;
     }
 
 
     public long getCurrentTime() {
         return startTime + (currentTick << tickGranularityBits);
+    }
+
+    public int count() {
+        return activeTimers;
     }
 }
